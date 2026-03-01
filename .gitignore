@@ -1,0 +1,32 @@
+cd D:\CLJ\crm-core
+New-Item .gitignore
+```
+
+Open `.gitignore` in VS Code and paste this:
+```
+# Environment variables - NEVER commit these
+backend/.env
+frontend/.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Database
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/

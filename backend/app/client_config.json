@@ -1,0 +1,19 @@
+{
+  "client_name": "Smith Dental",
+  "client_industry": "dental",
+  "primary_color": "#4361ee",
+  "accent_color": "#2dc653",
+  "logo_text": "SD",
+  "sms_sender_name": "Smith Dental",
+  "lead_stages": ["new", "contacted", "qualified", "lost"],
+  "scoring_keywords": {
+    "high_urgency": ["emergency", "pain", "urgent", "asap", "immediately", "severe"],
+    "high_value": ["implant", "veneers", "whitening", "cosmetic", "full mouth"],
+    "medium_urgency": ["appointment", "consultation", "interested", "pricing"],
+    "low_urgency": ["browsing", "just looking", "information", "maybe"]
+  },
+  "auto_sms": true,
+  "auto_email": false,
+  "monthly_retainer": 250,
+  "setup_fee": 2500
+}
