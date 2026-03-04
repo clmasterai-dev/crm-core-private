@@ -40,7 +40,7 @@ class Contact(Base):
     __tablename__ = "contacts"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=True)
     phone = Column(String)
     company = Column(String)
     source = Column(String)

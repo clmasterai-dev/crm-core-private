@@ -97,7 +97,7 @@ function App() {
               <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <input placeholder="Name" required value={form.name} onChange={e => setForm({...form, name: e.target.value})}
                   style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
-                <input placeholder="Email" required type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
+                <input placeholder="Email (optional)" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
                   style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
                 <input placeholder="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}
                   style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />

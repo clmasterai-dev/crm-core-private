@@ -32,7 +32,6 @@ async def incoming_sms(
     if not existing_contact:
         new_contact = models.Contact(
             name=f"SMS Lead {From[-4:]}",
-            email=f"{From.replace('+', '')}@sms.lead",
             phone=From,
             source="SMS Inbound"
         )

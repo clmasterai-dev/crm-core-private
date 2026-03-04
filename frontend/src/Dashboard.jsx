@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [leads, setLeads] = useState([])
   const [scores, setScores] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     fetchAll()
@@ -37,6 +38,7 @@ export default function Dashboard() {
       setScores(scoresRes.data)
     } catch (err) {
       console.error(err)
+      setError(true)
     }
     setLoading(false)
   }
@@ -68,7 +70,26 @@ export default function Dashboard() {
   const highPriorityLeads = scores.filter(s => s.priority === 'high').length
   const conversionRate = leads.length > 0 ? Math.round((leads.filter(l => l.status === 'qualified').length / leads.length) * 100) : 0
 
-  if (loading) return <Loading message="Loading Dashboard..." />
+  if (loading) return <Loading message="Loading Dashboard..." onRetry={fetchAll} />
+  if (error) return (
+    <div style={{ display: 'flex', alignItems: 'center', 
+      justifyContent: 'center', padding: '80px 0' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+        <div style={{ color: '#ef233c', fontWeight: 'bold', fontSize: '18px', marginBottom: '8px' }}>
+          Could not connect to server
+        </div>
+        <div style={{ color: '#888', marginBottom: '24px' }}>
+          Make sure the backend is running on port 8080.
+        </div>
+        <button onClick={() => { setError(false); setLoading(true); fetchAll(); }}
+          style={{ padding: '10px 24px', background: '#4361ee', color: 'white', 
+          border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+          Try Again
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div style={{ padding: '24px' }}>

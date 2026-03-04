@@ -27,6 +27,7 @@ export default function Pipeline() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ contact_id: '', value_estimate: '', notes: '' })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     fetchLeads()
@@ -54,6 +55,7 @@ export default function Pipeline() {
       }
     } catch (err) {
       console.error(err)
+      setError(true)
     }
     setLoading(false)
   }
@@ -78,14 +80,15 @@ export default function Pipeline() {
 
   const handleDragEnd = async (result) => {
     if (!result.destination) return
+    if (result.destination.droppableId === result.source.droppableId) return
     const leadId = parseInt(result.draggableId)
     const newStage = result.destination.droppableId
+    setLeads(leads.map(l => l.id === leadId ? { ...l, status: newStage } : l))
     try {
-      const lead = leads.find(l => l.id === leadId)
-      await axios.put(`${API}/leads/${leadId}`, { ...lead, status: newStage })
-      setLeads(leads.map(l => l.id === leadId ? { ...l, status: newStage } : l))
+      await axios.patch(`${API}/leads/${leadId}/stage`, { status: newStage })
     } catch (err) {
       console.error(err)
+      fetchLeads()
     }
   }
 
@@ -108,97 +111,121 @@ export default function Pipeline() {
 
   return (
     <div style={{ padding: '24px', position: 'relative' }}>
-      {loading && <Loading message="Loading Pipeline..." />}
+      {loading && <Loading message="Loading Pipeline..." onRetry={fetchLeads} />}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2 style={{ margin: 0 }}>Lead Pipeline</h2>
-        <button onClick={() => setShowForm(!showForm)}
-          style={{ padding: '10px 20px', background: '#4361ee', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-          + Add Lead
-        </button>
+{error && !loading && (
+  <div style={{ display: 'flex', alignItems: 'center', 
+    justifyContent: 'center', padding: '80px 0' }}>
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+      <div style={{ color: '#ef233c', fontWeight: 'bold', fontSize: '18px', marginBottom: '8px' }}>
+        Could not connect to server
       </div>
+      <div style={{ color: '#888', marginBottom: '24px' }}>
+        Make sure the backend is running on port 8080.
+      </div>
+      <button onClick={() => { setError(false); fetchLeads(); }}
+        style={{ padding: '10px 24px', background: '#4361ee', color: 'white', 
+        border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+        Try Again
+      </button>
+    </div>
+  </div>
+)}
 
-      {showForm && (
-        <div style={{ background: '#f8f9fa', padding: '24px', borderRadius: '8px', marginBottom: '24px' }}>
-          <h3 style={{ marginTop: 0 }}>New Lead</h3>
-          <form onSubmit={handleAddLead} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-            <select required value={form.contact_id} onChange={e => setForm({...form, contact_id: e.target.value})}
-              style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}>
-              <option value=''>Select Contact</option>
-              {contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <input placeholder="Value Estimate ($)" type="number" value={form.value_estimate}
-              onChange={e => setForm({...form, value_estimate: e.target.value})}
-              style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
-            <input placeholder="Notes" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}
-              style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
-            <button type="submit"
-              style={{ padding: '10px', background: '#2dc653', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Save Lead
-            </button>
-          </form>
-        </div>
-      )}
+{!loading && !error && (
+  <>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <h2 style={{ margin: 0 }}>Lead Pipeline</h2>
+      <button onClick={() => setShowForm(!showForm)}
+        style={{ padding: '10px 20px', background: '#4361ee', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+        + Add Lead
+      </button>
+    </div>
 
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          {STAGES.map(stage => (
-            <div key={stage} style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px', minHeight: '400px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', gap: '8px' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: STAGE_COLORS[stage] }} />
-                <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                  {STAGE_LABELS[stage]}
-                </h3>
-                <span style={{ marginLeft: 'auto', background: STAGE_COLORS[stage], color: 'white', borderRadius: '12px', padding: '2px 8px', fontSize: '12px' }}>
-                  {getLeadsByStage(stage).length}
-                </span>
-              </div>
-              <Droppable droppableId={stage}>
-                {(provided, snapshot) => (
-                  <div ref={provided.innerRef} {...provided.droppableProps}
-                    style={{ minHeight: '300px', background: snapshot.isDraggingOver ? '#e8ecff' : 'transparent', borderRadius: '6px', transition: 'background 0.2s', padding: '4px' }}>
-                    {getLeadsByStage(stage).map((lead, index) => (
-                      <Draggable key={lead.id} draggableId={String(lead.id)} index={index}>
-                        {(provided, snapshot) => (
-                          <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}
-                            style={{ background: 'white', borderRadius: '6px', padding: '12px', marginBottom: '8px',
-                              boxShadow: snapshot.isDragging ? '0 4px 12px rgba(0,0,0,0.15)' : '0 1px 3px rgba(0,0,0,0.1)',
-                              cursor: 'grab', ...provided.draggableProps.style }}>
-                            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{getContactName(lead.contact_id)}</div>
-                            {lead.value_estimate > 0 && (
-                              <div style={{ color: '#2dc653', fontWeight: 'bold', fontSize: '14px' }}>
-                                ${lead.value_estimate.toLocaleString()}
-                              </div>
-                            )}
-                            {lead.notes && <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>{lead.notes}</div>}
-                            {lead.score && (
-                              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <div style={{ 
-                                  background: lead.score >= 70 ? '#2dc653' : lead.score >= 40 ? '#f77f00' : '#ef233c',
-                                  color: 'white', borderRadius: '12px', padding: '2px 8px', fontSize: '11px', fontWeight: 'bold' 
-                                }}>
-                                  {lead.score}/100
-                                </div>
-                                <div style={{ fontSize: '11px', color: '#888' }}>{lead.priority?.toUpperCase()}</div>
-                              </div>
-                            )}
-                            {lead.recommended_action && (
-                              <div style={{ fontSize: '11px', color: '#4361ee', marginTop: '4px', fontStyle: 'italic' }}>
-                                → {lead.recommended_action}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
+    {showForm && (
+      <div style={{ background: '#f8f9fa', padding: '24px', borderRadius: '8px', marginBottom: '24px' }}>
+        <h3 style={{ marginTop: 0 }}>New Lead</h3>
+        <form onSubmit={handleAddLead} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+          <select required value={form.contact_id} onChange={e => setForm({...form, contact_id: e.target.value})}
+            style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}>
+            <option value=''>Select Contact</option>
+            {contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <input placeholder="Value Estimate ($)" type="number" value={form.value_estimate}
+            onChange={e => setForm({...form, value_estimate: e.target.value})}
+            style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
+          <input placeholder="Notes" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}
+            style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
+          <button type="submit"
+            style={{ padding: '10px', background: '#2dc653', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+            Save Lead
+          </button>
+        </form>
+      </div>
+    )}
+
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+        {STAGES.map(stage => (
+          <div key={stage} style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px', minHeight: '400px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', gap: '8px' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: STAGE_COLORS[stage] }} />
+              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                {STAGE_LABELS[stage]}
+              </h3>
+              <span style={{ marginLeft: 'auto', background: STAGE_COLORS[stage], color: 'white', borderRadius: '12px', padding: '2px 8px', fontSize: '12px' }}>
+                {getLeadsByStage(stage).length}
+              </span>
             </div>
-          ))}
-        </div>
-      </DragDropContext>
+            <Droppable droppableId={stage}>
+              {(provided, snapshot) => (
+                <div ref={provided.innerRef} {...provided.droppableProps}
+                  style={{ minHeight: '300px', background: snapshot.isDraggingOver ? '#e8ecff' : 'transparent', borderRadius: '6px', transition: 'background 0.2s', padding: '4px' }}>
+                  {getLeadsByStage(stage).map((lead, index) => (
+                    <Draggable key={lead.id} draggableId={String(lead.id)} index={index}>
+                      {(provided, snapshot) => (
+                        <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}
+                          style={{ background: 'white', borderRadius: '6px', padding: '12px', marginBottom: '8px',
+                            boxShadow: snapshot.isDragging ? '0 4px 12px rgba(0,0,0,0.15)' : '0 1px 3px rgba(0,0,0,0.1)',
+                            cursor: 'grab', ...provided.draggableProps.style }}>
+                          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{getContactName(lead.contact_id)}</div>
+                          {lead.value_estimate > 0 && (
+                            <div style={{ color: '#2dc653', fontWeight: 'bold', fontSize: '14px' }}>
+                              ${lead.value_estimate.toLocaleString()}
+                            </div>
+                          )}
+                          {lead.notes && <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>{lead.notes}</div>}
+                          {lead.score && (
+                            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ 
+                                background: lead.score >= 70 ? '#2dc653' : lead.score >= 40 ? '#f77f00' : '#ef233c',
+                                color: 'white', borderRadius: '12px', padding: '2px 8px', fontSize: '11px', fontWeight: 'bold' 
+                              }}>
+                                {lead.score}/100
+                              </div>
+                              <div style={{ fontSize: '11px', color: '#888' }}>{lead.priority?.toUpperCase()}</div>
+                            </div>
+                          )}
+                          {lead.recommended_action && (
+                            <div style={{ fontSize: '11px', color: '#4361ee', marginTop: '4px', fontStyle: 'italic' }}>
+                              → {lead.recommended_action}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </div>
+        ))}
+      </div>
+    </DragDropContext>
+  </>
+)}
     </div>
   )
 }

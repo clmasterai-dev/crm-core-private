@@ -12,7 +12,7 @@ router = APIRouter()
 
 class ContactCreate(BaseModel):
     name: str
-    email: str
+    email: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
     source: Optional[str] = None
@@ -35,6 +35,9 @@ class ActivityCreate(BaseModel):
     lead_id: Optional[int] = None
     type: str
     description: Optional[str] = None
+
+class LeadStageUpdate(BaseModel):
+    status: str
 
 # --- Contact Routes ---
 
@@ -165,6 +168,16 @@ def update_lead(lead_id: int, lead: LeadCreate, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(db_lead)
     
+    return db_lead
+
+@router.patch("/leads/{lead_id}/stage")
+def update_lead_stage(lead_id: int, stage_update: LeadStageUpdate, db: Session = Depends(get_db)):
+    db_lead = db.query(models.Lead).filter(models.Lead.id == lead_id).first()
+    if not db_lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    db_lead.status = stage_update.status
+    db.commit()
+    db.refresh(db_lead)
     return db_lead
 
 # --- Deal Routes ---
