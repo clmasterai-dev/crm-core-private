@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import Loading from './components/Loading'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend
@@ -67,7 +68,7 @@ export default function Dashboard() {
   const highPriorityLeads = scores.filter(s => s.priority === 'high').length
   const conversionRate = leads.length > 0 ? Math.round((leads.filter(l => l.status === 'qualified').length / leads.length) * 100) : 0
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading dashboard...</div>
+  if (loading) return <Loading message="Loading Dashboard..." />
 
   return (
     <div style={{ padding: '24px' }}>

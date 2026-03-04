@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import axios from 'axios'
+import Loading from './components/Loading'
 
 const API = 'http://127.0.0.1:8080/api/v1'
 
@@ -25,6 +26,7 @@ export default function Pipeline() {
   const [contacts, setContacts] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ contact_id: '', value_estimate: '', notes: '' })
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchLeads()
@@ -32,11 +34,10 @@ export default function Pipeline() {
   }, [])
 
   const fetchLeads = async () => {
+    setLoading(true)
     try {
       const res = await axios.get(`${API}/leads`)
       const leadsData = res.data
-      
-      // Fetch scores for all leads
       try {
         const scoresRes = await axios.get(`${API}/leads/score/all`)
         const scoresMap = {}
@@ -54,6 +55,7 @@ export default function Pipeline() {
     } catch (err) {
       console.error(err)
     }
+    setLoading(false)
   }
 
   const fetchContacts = async () => {
@@ -105,7 +107,9 @@ export default function Pipeline() {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: '24px', position: 'relative' }}>
+      {loading && <Loading message="Loading Pipeline..." />}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h2 style={{ margin: 0 }}>Lead Pipeline</h2>
         <button onClick={() => setShowForm(!showForm)}
@@ -168,20 +172,20 @@ export default function Pipeline() {
                             )}
                             {lead.notes && <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>{lead.notes}</div>}
                             {lead.score && (
-                            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <div style={{ 
-                                background: lead.score >= 70 ? '#2dc653' : lead.score >= 40 ? '#f77f00' : '#ef233c',
-                                color: 'white', borderRadius: '12px', padding: '2px 8px', fontSize: '11px', fontWeight: 'bold' 
+                                  background: lead.score >= 70 ? '#2dc653' : lead.score >= 40 ? '#f77f00' : '#ef233c',
+                                  color: 'white', borderRadius: '12px', padding: '2px 8px', fontSize: '11px', fontWeight: 'bold' 
                                 }}>
-                                {lead.score}/100
+                                  {lead.score}/100
                                 </div>
                                 <div style={{ fontSize: '11px', color: '#888' }}>{lead.priority?.toUpperCase()}</div>
-                            </div>
+                              </div>
                             )}
                             {lead.recommended_action && (
-                            <div style={{ fontSize: '11px', color: '#4361ee', marginTop: '4px', fontStyle: 'italic' }}>
+                              <div style={{ fontSize: '11px', color: '#4361ee', marginTop: '4px', fontStyle: 'italic' }}>
                                 → {lead.recommended_action}
-                            </div>
+                              </div>
                             )}
                           </div>
                         )}

@@ -81,10 +81,37 @@ def delete_contact(contact_id: int, db: Session = Depends(get_db)):
 
 @router.post("/leads")
 def create_lead(lead: LeadCreate, db: Session = Depends(get_db)):
+    from app.scoring import score_lead
+    from datetime import datetime
+    
     db_lead = models.Lead(**lead.dict())
     db.add(db_lead)
     db.commit()
     db.refresh(db_lead)
+    
+    # Score immediately on creation
+    contact = db.query(models.Contact).filter(models.Contact.id == db_lead.contact_id).first()
+    if contact:
+        lead_dict = {
+            "id": db_lead.id,
+            "notes": db_lead.notes,
+            "value_estimate": db_lead.value_estimate,
+            "status": db_lead.status.value if db_lead.status else "new"
+        }
+        contact_dict = {
+            "name": contact.name,
+            "source": contact.source,
+            "company": contact.company
+        }
+        score_data = score_lead(contact_dict, lead_dict)
+        db_lead.score = score_data.get("score")
+        db_lead.priority = score_data.get("priority")
+        db_lead.reasoning = score_data.get("reasoning")
+        db_lead.recommended_action = score_data.get("recommended_action")
+        db_lead.scored_at = datetime.utcnow()
+        db.commit()
+        db.refresh(db_lead)
+    
     return db_lead
 
 @router.get("/leads")
@@ -100,13 +127,44 @@ def get_lead(lead_id: int, db: Session = Depends(get_db)):
 
 @router.put("/leads/{lead_id}")
 def update_lead(lead_id: int, lead: LeadCreate, db: Session = Depends(get_db)):
+    from app.scoring import score_lead
+    from datetime import datetime
+    
     db_lead = db.query(models.Lead).filter(models.Lead.id == lead_id).first()
     if not db_lead:
         raise HTTPException(status_code=404, detail="Lead not found")
+    
+    old_notes = db_lead.notes
+    
     for key, value in lead.dict().items():
         setattr(db_lead, key, value)
     db.commit()
     db.refresh(db_lead)
+    
+    # Only rescore if notes changed
+    if lead.notes != old_notes:
+        contact = db.query(models.Contact).filter(models.Contact.id == db_lead.contact_id).first()
+        if contact:
+            lead_dict = {
+                "id": db_lead.id,
+                "notes": db_lead.notes,
+                "value_estimate": db_lead.value_estimate,
+                "status": db_lead.status.value if db_lead.status else "new"
+            }
+            contact_dict = {
+                "name": contact.name,
+                "source": contact.source,
+                "company": contact.company
+            }
+            score_data = score_lead(contact_dict, lead_dict)
+            db_lead.score = score_data.get("score")
+            db_lead.priority = score_data.get("priority")
+            db_lead.reasoning = score_data.get("reasoning")
+            db_lead.recommended_action = score_data.get("recommended_action")
+            db_lead.scored_at = datetime.utcnow()
+            db.commit()
+            db.refresh(db_lead)
+    
     return db_lead
 
 # --- Deal Routes ---
@@ -161,24 +219,19 @@ def get_lead_score(lead_id: int, db: Session = Depends(get_db)):
 @router.get("/leads/score/all")
 def score_all_leads(db: Session = Depends(get_db)):
     leads = db.query(models.Lead).all()
-    leads_with_contacts = []
+    results = []
     for lead in leads:
         contact = db.query(models.Contact).filter(models.Contact.id == lead.contact_id).first()
-        if contact:
-            leads_with_contacts.append({
-                "lead": {
-                    "id": lead.id,
-                    "notes": lead.notes,
-                    "value_estimate": lead.value_estimate,
-                    "status": lead.status.value if lead.status else "new"
-                },
-                "contact": {
-                    "name": contact.name,
-                    "source": contact.source,
-                    "company": contact.company
-                }
-            })
-    return score_leads_batch(leads_with_contacts)
+        results.append({
+            "lead_id": lead.id,
+            "contact_name": contact.name if contact else "Unknown",
+            "score": lead.score or 50,
+            "priority": lead.priority or "medium",
+            "reasoning": lead.reasoning or "Not yet scored",
+            "recommended_action": lead.recommended_action or "Review lead manually"
+        })
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results
 
 # --- Activity Routes ---
 

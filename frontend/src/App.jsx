@@ -9,7 +9,8 @@ function App() {
   const [contacts, setContacts] = useState([])
   const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', source: '' })
   const [loading, setLoading] = useState(false)
-  const [view, setView] = useState('contacts')
+  const [view, setView] = useState('home')
+  
   const [config, setConfig] = useState({
     client_name: 'CRM Core',
     primary_color: '#4361ee',
@@ -62,26 +63,30 @@ function App() {
   return (
     <div style={{ fontFamily: 'sans-serif', minHeight: '100vh', background: '#f0f2f5' }}>
       {/* Nav */}
-      <div style={{ background: '#1a1a2e', padding: '16px 32px', display: 'flex', alignItems: 'center', gap: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ background: '#1a1a2e', padding: '16px 32px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div onClick={() => setView('home')} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginRight: '24px' }}>
           <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: config.primary_color,
             display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '14px' }}>
             {config.logo_text}
           </div>
           <h1 style={{ color: 'white', margin: 0, fontSize: '20px' }}>{config.client_name}</h1>
         </div>
-        <button onClick={() => setView('contacts')}
-          style={{ background: view === 'contacts' ? '#4361ee' : 'transparent', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-          Contacts
-        </button>
-        <button onClick={() => setView('pipeline')}
-          style={{ background: view === 'pipeline' ? '#4361ee' : 'transparent', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-          Pipeline
-        </button>
-        <button onClick={() => setView('dashboard')}
-          style={{ background: view === 'dashboard' ? '#4361ee' : 'transparent', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-          Dashboard
-        </button>
+        {[
+          { id: 'contacts', label: 'Contacts' },
+          { id: 'pipeline', label: 'Pipeline' },
+          { id: 'dashboard', label: 'Dashboard' },
+          { id: 'conversations', label: 'Conversations' },
+          { id: 'calendar', label: 'Calendar' },
+          { id: 'automations', label: 'Automations' },
+          { id: 'settings', label: 'Settings' },
+        ].map(item => (
+          <button key={item.id} onClick={() => setView(item.id)}
+            style={{ background: view === item.id ? '#4361ee' : 'transparent', color: 'white', border: 'none', 
+            padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: view === item.id ? 'bold' : 'normal',
+            transition: 'background 0.2s' }}>
+            {item.label}
+          </button>
+        ))}
       </div>
 
       <div style={{ maxWidth: '1200px', margin: '32px auto', padding: '0 20px' }}>
@@ -148,6 +153,37 @@ function App() {
 
         {view === 'pipeline' && <Pipeline />}
         {view === 'dashboard' && <Dashboard />}
+
+        {view === 'home' && (
+          <div style={{ textAlign: 'center', paddingTop: '80px' }}>
+            <h2 style={{ color: '#1a1a2e' }}>Welcome to {config.client_name}</h2>
+            <p style={{ color: '#888' }}>Home page coming next.</p>
+          </div>
+        )}
+        {view === 'conversations' && (
+          <div style={{ textAlign: 'center', paddingTop: '80px' }}>
+            <h2 style={{ color: '#1a1a2e' }}>Conversations</h2>
+            <p style={{ color: '#888' }}>Coming soon.</p>
+          </div>
+        )}
+        {view === 'calendar' && (
+          <div style={{ textAlign: 'center', paddingTop: '80px' }}>
+            <h2 style={{ color: '#1a1a2e' }}>Calendar</h2>
+            <p style={{ color: '#888' }}>Coming soon.</p>
+          </div>
+        )}
+        {view === 'automations' && (
+          <div style={{ textAlign: 'center', paddingTop: '80px' }}>
+            <h2 style={{ color: '#1a1a2e' }}>Automations</h2>
+            <p style={{ color: '#888' }}>Coming soon.</p>
+          </div>
+        )}
+        {view === 'settings' && (
+          <div style={{ textAlign: 'center', paddingTop: '80px' }}>
+            <h2 style={{ color: '#1a1a2e' }}>Settings</h2>
+            <p style={{ color: '#888' }}>Coming soon.</p>
+          </div>
+        )}
       </div>
     </div>
   )
