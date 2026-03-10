@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import axios from 'axios'
 import Loading from './components/Loading'
 
-const API = 'http://127.0.0.1:8080/api/v1'
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8080/api/v1'
 
 const STAGES = ['new', 'contacted', 'qualified', 'lost']
 
