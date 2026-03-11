@@ -19,12 +19,21 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-def run_migrations_offline() -> None:
+def _get_url():
+    """Get database URL from environment or alembic.ini, fixing Render's postgres:// scheme."""
     url = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+    if url and url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    return url
+
+
+def run_migrations_offline() -> None:
+    url = _get_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
+        render_as_batch=True,
         dialect_opts={"paramstyle": "named"},
     )
     with context.begin_transaction():
@@ -32,12 +41,13 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    db_url = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
-    connectable = create_engine(db_url, poolclass=pool.NullPool)
+    connectable = create_engine(_get_url(), poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            render_as_batch=True,
         )
         with context.begin_transaction():
             context.run_migrations()

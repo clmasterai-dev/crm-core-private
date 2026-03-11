@@ -1,11 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import engine
-from app import models
 from app.routes import router
 from app.webhook import webhook_router
-
-models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="CRM Core API", version="1.0.0")
 
